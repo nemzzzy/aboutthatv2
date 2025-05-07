@@ -32,8 +32,6 @@ app.use(express.static(__dirname));
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://nemzzzy:Hi123456%2E@aboutthat.mlbsvhu.mongodb.net/chat?retryWrites=true&w=majority&appName=AboutThat';
 
 mongoose.connect(MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
     serverSelectionTimeoutMS: 5000,
     socketTimeoutMS: 45000,
 })
