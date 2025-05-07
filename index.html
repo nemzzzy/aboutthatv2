@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AboutThat</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+</head>
+<body>
+    <div class="menu-button" onclick="toggleMenu()">
+        <div class="menu-line"></div>
+        <div class="menu-line"></div>
+        <div class="menu-line"></div>
+    </div>
+
+    <div class="side-menu" id="side-menu">
+        <div class="menu-header">
+            <h2>Menu</h2>
+            <button class="close-menu" onclick="toggleMenu()">×</button>
+        </div>
+        
+        <div class="menu-section">
+            <h3>Admin</h3>
+            <div class="admin-content">
+                <div class="code-input-container">
+                    <input type="text" id="admin-code" placeholder="Enter 4-digit code" maxlength="4">
+                    <button id="apply-code" onclick="applyCode()">Apply</button>
+                </div>
+                <div id="code-status"></div>
+                <div id="owner-controls" style="display: none; margin-top: 15px;">
+                    <button onclick="deleteAllMessages()" class="delete-button">Delete All Messages</button>
+                    <button onclick="deleteAllHighlights()" class="delete-button">Delete All Highlights</button>
+                    <button onclick="deleteAllSchoolMessages()" class="delete-button">Delete All School Messages</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="menu-section">
+            <h3>Navigation</h3>
+            <div class="nav-content">
+                <button onclick="switchToMainChat()" class="nav-button">Main Chat</button>
+                <button onclick="switchToHighlights()" class="nav-button highlight-button">Highlights</button>
+                <button onclick="switchToSchool()" class="nav-button school-button">School</button>
+            </div>
+        </div>
+
+        <div class="menu-section">
+            <h3>Info</h3>
+            <div class="info-content">
+                <p>AboutThat is a real-time chat application that allows users to communicate instantly and anonymously.</p>
+                <h4>Message Colors:</h4>
+                <ul>
+                    <li><span class="color-dot blue"></span> Blue messages: Admin</li>
+                    <li><span class="color-dot yellow"></span> Yellow messages: Owner</li>
+                    <li><span class="color-dot green"></span> Green messages: Regular user</li>
+                    <li><span class="color-dot red"></span> Red messages: Highlighter</li>
+                    <li><span class="color-dot orange"></span> Orange messages: Teacher</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <div class="chat-window" id="main-chat">
+            <h1>AboutThat</h1>
+            <div class="chat-container" id="chat-container">
+                <!-- Messages will be added here -->
+            </div>
+            <div class="input-container" id="main-input-container">
+                <input type="text" id="message-input" placeholder="Type your message...">
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+
+        <div class="chat-window" id="highlights-chat" style="display: none;">
+            <h1>Highlights</h1>
+            <div class="chat-container" id="highlights-container">
+                <!-- Highlight messages will be added here -->
+            </div>
+            <div class="input-container" id="highlights-input-container">
+                <input type="text" id="highlights-input" placeholder="Type your highlight...">
+                <button onclick="sendHighlight()">Send</button>
+            </div>
+        </div>
+
+        <div class="chat-window" id="school-chat" style="display: none;">
+            <h1>School</h1>
+            <div class="chat-container" id="school-container">
+                <!-- School messages will be added here -->
+            </div>
+            <div class="input-container" id="school-input-container">
+                <input type="text" id="school-input" placeholder="Type your school message...">
+                <button onclick="sendSchoolMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="chat.js"></script>
+    <script>
+        function addMessageToChat(text, isAdmin = false, isOwner = false, isTeacher = false, isHighlighter = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            if (isAdmin) {
+                messageDiv.classList.add('admin-message');
+            } else if (isOwner) {
+                messageDiv.classList.add('owner-message');
+            } else if (isTeacher) {
+                messageDiv.classList.add('teacher-message');
+            } else if (isHighlighter) {
+                messageDiv.classList.add('highlighter-message');
+            }
+            messageDiv.textContent = text;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        const chatContainer = document.getElementById('chat-container');
+        const messageInput = document.getElementById('message-input');
+        const sideMenu = document.getElementById('side-menu');
+        const adminCode = document.getElementById('admin-code');
+        const applyButton = document.getElementById('apply-code');
+        const codeStatus = document.getElementById('code-status');
+
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        function toggleMenu() {
+            sideMenu.classList.toggle('active');
+        }
+
+        function applyCode() {
+            const code = adminCode.value;
+            if (code === '5544') {
+                localStorage.setItem('userRole', 'admin');
+                codeStatus.textContent = 'Admin privileges activated';
+                codeStatus.style.color = '#4CAF50';
+                applyButton.textContent = 'Remove';
+                applyButton.onclick = removeCode;
+                document.getElementById('owner-controls').style.display = 'none';
+                updateInputVisibility();
+            } else if (code === '9210') {
+                localStorage.setItem('userRole', 'owner');
+                codeStatus.textContent = 'Owner privileges activated';
+                codeStatus.style.color = '#4CAF50';
+                applyButton.textContent = 'Remove';
+                applyButton.onclick = removeCode;
+                document.getElementById('owner-controls').style.display = 'block';
+                updateInputVisibility();
+            } else if (code === '7777') {
+                localStorage.setItem('userRole', 'highlighter');
+                codeStatus.textContent = 'Highlighter privileges activated';
+                codeStatus.style.color = '#4CAF50';
+                applyButton.textContent = 'Remove';
+                applyButton.onclick = removeCode;
+                document.getElementById('owner-controls').style.display = 'none';
+                updateInputVisibility();
+            } else if (code === '3214') {
+                localStorage.setItem('userRole', 'teacher');
+                codeStatus.textContent = 'Teacher privileges activated';
+                codeStatus.style.color = '#4CAF50';
+                applyButton.textContent = 'Remove';
+                applyButton.onclick = removeCode;
+                document.getElementById('owner-controls').style.display = 'none';
+                updateInputVisibility();
+            } else {
+                codeStatus.textContent = 'Invalid code';
+                codeStatus.style.color = '#ff4444';
+            }
+        }
+
+        function removeCode() {
+            localStorage.removeItem('userRole');
+            codeStatus.textContent = '';
+            applyButton.textContent = 'Apply';
+            applyButton.onclick = applyCode;
+            adminCode.value = '';
+            document.getElementById('owner-controls').style.display = 'none';
+        }
+
+        function updateInputVisibility() {
+            const userRole = localStorage.getItem('userRole');
+            const isPrivileged = ['admin', 'owner', 'highlighter'].includes(userRole);
+            
+            // Update highlights input visibility
+            const highlightsInputContainer = document.getElementById('highlights-input-container');
+            if (highlightsInputContainer) {
+                highlightsInputContainer.style.display = isPrivileged ? 'flex' : 'none';
+            }
+
+            // School chat is visible to everyone
+            const schoolInputContainer = document.getElementById('school-input-container');
+            if (schoolInputContainer) {
+                schoolInputContainer.style.display = 'flex';
+            }
+        }
+
+        function switchToMainChat() {
+            document.getElementById('main-chat').style.display = 'flex';
+            document.getElementById('highlights-chat').style.display = 'none';
+            document.getElementById('school-chat').style.display = 'none';
+        }
+
+        function switchToHighlights() {
+            document.getElementById('main-chat').style.display = 'none';
+            document.getElementById('highlights-chat').style.display = 'flex';
+            document.getElementById('school-chat').style.display = 'none';
+        }
+
+        function switchToSchool() {
+            document.getElementById('main-chat').style.display = 'none';
+            document.getElementById('highlights-chat').style.display = 'none';
+            document.getElementById('school-chat').style.display = 'flex';
+        }
+
+        function addHighlightToChat(text) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message highlight-message';
+            messageDiv.textContent = text;
+            document.getElementById('highlights-container').appendChild(messageDiv);
+            document.getElementById('highlights-container').scrollTop = document.getElementById('highlights-container').scrollHeight;
+        }
+
+        async function sendHighlight() {
+            const userRole = localStorage.getItem('userRole');
+            if (!['admin', 'owner', 'highlighter'].includes(userRole)) {
+                alert('You do not have permission to send highlights');
+                return;
+            }
+
+            const messageInput = document.getElementById('highlights-input');
+            const message = messageInput.value.trim();
+            
+            if (message) {
+                try {
+                    await chatStorage.saveHighlight(message);
+                    messageInput.value = '';
+                } catch (error) {
+                    console.error('Error sending highlight:', error);
+                    alert('Error sending highlight. Please try again.');
+                }
+            }
+        }
+
+        async function deleteAllMessages() {
+            if (!confirm('Are you sure you want to delete all messages? This cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/messages', {
+                    method: 'DELETE',
+                    headers: {
+                        'user-role': localStorage.getItem('userRole')
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('All messages have been deleted');
+                    // Clear the chat container
+                    document.getElementById('chat-container').innerHTML = '';
+                    // Refresh the messages
+                    chatStorage.init();
+                } else {
+                    alert(result.error || 'Failed to delete messages');
+                }
+            } catch (error) {
+                console.error('Error deleting messages:', error);
+                alert('Error deleting messages');
+            }
+        }
+
+        async function deleteAllHighlights() {
+            const userRole = localStorage.getItem('userRole');
+            if (userRole !== 'owner') {
+                alert('Only owners can delete highlights');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to delete all highlights? This cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/highlights', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'user-role': userRole
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    console.log('Delete highlights success:', result);
+                    alert(`All highlights have been deleted (${result.deletedCount} items)`);
+                    // Clear the highlights container if we're in the highlights view
+                    document.getElementById('highlights-container').innerHTML = '';
+                } else {
+                    console.error('Delete highlights failed:', result);
+                    alert(result.error + (result.details ? `\n${result.details}` : ''));
+                }
+            } catch (error) {
+                console.error('Error deleting highlights:', error);
+                alert('Error deleting highlights: ' + error.message);
+            }
+        }
+
+        function addSchoolMessageToChat(text, isTeacher = false) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            if (isTeacher) {
+                messageDiv.classList.add('teacher-message');
+            }
+            messageDiv.textContent = text;
+            document.getElementById('school-container').appendChild(messageDiv);
+            document.getElementById('school-container').scrollTop = document.getElementById('school-container').scrollHeight;
+        }
+
+        async function sendSchoolMessage() {
+            const messageInput = document.getElementById('school-input');
+            const message = messageInput.value.trim();
+            
+            if (message) {
+                try {
+                    await chatStorage.saveSchoolMessage(message);
+                    messageInput.value = '';
+                } catch (error) {
+                    console.error('Error sending school message:', error);
+                    alert('Error sending school message. Please try again.');
+                }
+            }
+        }
+
+        async function deleteAllSchoolMessages() {
+            const userRole = localStorage.getItem('userRole');
+            if (userRole !== 'owner') {
+                alert('Only owners can delete school messages');
+                return;
+            }
+
+            if (!confirm('Are you sure you want to delete all school messages? This cannot be undone.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/school-messages', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'user-role': userRole
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    console.log('Delete school messages success:', result);
+                    alert(`All school messages have been deleted (${result.deletedCount} items)`);
+                    document.getElementById('school-container').innerHTML = '';
+                } else {
+                    console.error('Delete school messages failed:', result);
+                    alert(result.error + (result.details ? `\n${result.details}` : ''));
+                }
+            } catch (error) {
+                console.error('Error deleting school messages:', error);
+                alert('Error deleting school messages: ' + error.message);
+            }
+        }
+
+        // Check for existing role on page load
+        window.addEventListener('load', () => {
+            const userRole = localStorage.getItem('userRole');
+            if (userRole) {
+                codeStatus.textContent = `${userRole.charAt(0).toUpperCase() + userRole.slice(1)} privileges active`;
+                codeStatus.style.color = '#4CAF50';
+                applyButton.textContent = 'Remove';
+                applyButton.onclick = removeCode;
+                if (userRole === 'owner') {
+                    document.getElementById('owner-controls').style.display = 'block';
+                }
+                updateInputVisibility();
+            }
+        });
+    </script>
+</body>
+</html> 
